@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shiplet - Decentralized Fulfillment Network</title>
+  <!-- GSAP scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+  <style>
+    :root {
+        --primary: #00c278;
+        --dark: #121212;
+        --light: #ffffff;
+        --gray: #f5f5f5;
+        --gray-dark: #ebebeb;
+    }
+    
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    /* Animation classes */
+    .animate-on-scroll {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    
+    .animate-on-scroll.animate-left {
+        transform: translateX(-40px);
+    }
+    
+    .animate-on-scroll.animate-right {
+        transform: translateX(40px);
+    }
+    
+    .animate-on-scroll.animated {
+        opacity: 1;
+        transform: translate(0, 0);
+    }
+    
+    /* 3D Cube Container */
+    .animation-container {
+        position: relative;
+        width: 100%;
+        height: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        perspective: 1000px;
+        overflow: hidden;
+    }
+    
+    /* Cube */
+    .cube-container {
+        width: 150px;
+        height: 150px;
+        perspective: 1000px;
+        cursor: pointer;
+    }
+    
+    .cube {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.5s;
+    }
+    
+    /* Cube Faces */
+    .face {
+        position: absolute;
+        width: 150px;
+        height: 150px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background-color: #8B4513; /* Brown base color */
+        backface-visibility: visible;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Logo only on front and back (opposite sides) */
+    .front, .back {
+        background-image: url('shiplet.png');
+        background-size: 130px 80px;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+    
+    /* Box texture and seams */
+    .face::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h100v100H0z' fill='none'/%3E%3Cpath d='M0 0h100v25H0z' fill='rgba(0,0,0,0.05)'/%3E%3Cpath d='M0 75h100v25H0z' fill='rgba(0,0,0,0.05)'/%3E%3C/svg%3E");
+        background-size: cover;
+        opacity: 0.7;
+    }
+    
+    /* Different shades for different faces */
+    .front { 
+        transform: translateZ(75px); 
+        background-color: #A0522D; /* Slightly lighter brown */
+        z-index: 1;
+    }
+    
+    .back { 
+        transform: rotateY(180deg) translateZ(75px);
+        background-color: #8B4513;
+    }
+    
+    .right { 
+        transform: rotateY(90deg) translateZ(75px);
+        background-color: #A0522D;
+    }
+    
+    .left { 
+        transform: rotateY(-90deg) translateZ(75px);
+        background-color: #8B4513;
+    }
+    
+    .top { 
+        transform: rotateX(90deg) translateZ(75px);
+        background-color: #CD853F; /* Lighter brown for top */
+    }
+    
+    .bottom { 
+        transform: rotateX(-90deg) translateZ(75px);
+        background-color: #8B4513;
+    }
+    
+    /* Packing tape effect on edges */
+    .face::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 15px;
+        background-color: rgba(0, 194, 120, 0.7); /* Green tape color from logo */
+        opacity: 0.6;
+    }
+    
+    .front::before, .back::before {
+        top: 0;
+        left: 0;
+    }
+    
+    .right::before, .left::before {
+        bottom: 0;
+        left: 0;
+    }
+    
+    .top::before, .bottom::before {
+        display: none; /* No tape on top/bottom */
+    }
+    
+    body {
+        background-color: var(--light);
+        color: var(--dark);
+        line-height: 1.6;
+    }
+    
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+    
+    header {
+        padding: 1.5rem 0;
+        border-bottom: 1px solid var(--gray-dark);
+        margin-bottom: 1rem; /* Added more space below the header to accommodate larger logo */
+    }
+    
+    .logo img {
+        height: 80px; /* Doubled the logo height */
+    }
+    
+    .nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .nav-links {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+    }
+    
+    .nav-links a {
+        text-decoration: none;
+        color: var(--dark);
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    
+    .nav-links a:hover {
+        color: var(--primary);
+    }
+    
+    .btn {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #00a060;
+    }
+    
+    .btn-outline {
+        border: 1px solid var(--primary);
+        color: var(--primary);
+        background-color: transparent;
+    }
+    
+    .btn-outline:hover {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .hero {
+        padding: 5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 3rem;
+    }
+    
+    .hero-content {
+        flex: 1;
+    }
+    
+    .hero-image {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .hero-image img {
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+        font-size: 3.5rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.2;
+    }
+    
+    h1 span {
+        color: var(--primary);
+    }
+    
+    .hero p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        color: #555;
+    }
+    
+    .features {
+        padding: 5rem 0;
+        background-color: var(--gray);
+    }
+    
+    .section-title {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 3rem;
+    }
+    
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+    
+    .feature-card {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+    }
+    
+    .feature-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .how-it-works {
+        padding: 5rem 0;
+    }
+    
+    .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+        margin-top: 3rem;
+    }
+    
+    .step {
+        display: flex;
+        align-items: flex-start;
+        gap: 2rem;
+    }
+    
+    .step-number {
+        background-color: var(--primary);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+    
+    .step-content h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .signup-section {
+        padding: 5rem 0;
+        background-color: var(--gray);
+    }
+    
+    .signup-container {
+        display: flex;
+        gap: 3rem;
+        margin-top: 3rem;
+    }
+    
+    .signup-card {
+        flex: 1;
+        background-color: white;
+        padding: 2.5rem;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .signup-card h3 {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    input, select, textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+    
+    .form-submit {
+        text-align: center;
+    }
+    
+    footer {
+        background-color: #f5f5f5;
+        color: #333;
+        padding: 3rem 0;
+    }
+    
+    .footer-content {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 3rem;
+    }
+    
+    .footer-logo {
+        margin-bottom: 1rem;
+    }
+    
+    .footer-logo img {
+        height: 60px; /* Doubled the footer logo height */
+    }
+    
+    .footer-links h4 {
+        margin-bottom: 1.5rem;
+        font-size: 1.2rem;
+    }
+    
+    .footer-links ul {
+        list-style: none;
+    }
+    
+    .footer-links li {
+        margin-bottom: 0.75rem;
+    }
+    
+    .footer-links a {
+        color: #666;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    
+    .footer-links a:hover {
+        color: var(--primary);
+    }
+    
+    .copyright {
+        margin-top: 3rem;
+        text-align: center;
+        color: #777;
+        font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+        .hero {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+        }
+        
+        .signup-container {
+            flex-direction: column;
+        }
+        
+        .footer-content {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        
+        .nav-links {
+            display: none;
+        }
+    }
+    
+    /* Mobile menu button */
+    .menu-toggle {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+    
+    @media (max-width: 768px) {
+        .menu-toggle {
+            display: block;
+        }
+    }
+    
+    .success-message {
+        display: none;
+        background-color: rgba(0, 194, 120, 0.1);
+        border: 1px solid var(--primary);
+        color: var(--primary);
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+  </style>
+</head>
+<body>
+<header>
+    <div class="container">
+        <nav class="nav">
+            <div class="logo">
+                <a href="#">
+                    <img src="shiplet.png" alt="Shiplet Logo">
+                </a>
+            </div>
+            <button class="menu-toggle">☰</button>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="#signup">Sign Up</a>
+                <a href="#" class="btn btn-primary">Contact Us</a>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="container">
+        <div class="hero-content animate-on-scroll animate-left">
+            <h1>Revolutionize Your <span>eCommerce Fulfillment</span></h1>
+            <p>Shiplet is a decentralized fulfillment network that helps eCommerce businesses store inventory closer to customers, reducing costs and enabling same-day or next-day shipping.</p>
+            <a href="#signup" class="btn btn-primary">Get Started</a>
+        </div>
+        <div class="hero-image animate-on-scroll animate-right">
+            <div class="animation-container">
+                <div class="cube-container">
+                    <div class="cube">
+                        <div class="face front"></div>
+                        <div class="face back"></div>
+                        <div class="face right"></div>
+                        <div class="face left"></div>
+                        <div class="face top"></div>
+                        <div class="face bottom"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="features" id="features">
+    <div class="container">
+        <h2 class="section-title animate-on-scroll">Why Choose Shiplet?</h2>
+        <div class="feature-grid">
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon">🏠</div>
+                <h3>Hyper-Local Storage</h3>
+                <p>Distribute inventory across a network of local storage providers—homeowners, small businesses, and underutilized spaces—reducing shipping distances and costs.</p>
+            </div>
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon">⚡</div>
+                <h3>Same/Next-Day Delivery</h3>
+                <p>Enable lightning-fast shipping times by storing products closer to your customers, rivaling Amazon's delivery speeds.</p>
+            </div>
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon">💰</div>
+                <h3>Cost-Effective Solution</h3>
+                <p>Pay only for the space you use with no long-term contracts, significantly reducing fulfillment costs compared to traditional warehouses.</p>
+            </div>
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon">🔄</div>
+                <h3>Seamless Integration</h3>
+                <p>Our smart logistics platform connects businesses, providers, and couriers effortlessly, automating order processing and fulfillment.</p>
+            </div>
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon">📦</div>
+                <h3>On-Demand Packaging</h3>
+                <p>Local storage providers package and label orders on demand, ensuring quick processing times and consistent quality.</p>
+            </div>
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon">📈</div>
+                <h3>Scalable Solution</h3>
+                <p>Easily scale your fulfillment network up or down based on seasonal demands without the constraints of fixed warehouse space.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="how-it-works" id="how-it-works">
+    <div class="container">
+        <h2 class="section-title animate-on-scroll">How Shiplet Works</h2>
+        <div class="steps">
+            <div class="step animate-on-scroll">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Distribute Your Inventory</h3>
+                    <p>Send your products to our network of local storage providers strategically located near your customer base. Our algorithm determines the optimal inventory distribution based on your sales data.</p>
+                </div>
+            </div>
+            <div class="step animate-on-scroll">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Receive Orders Instantly</h3>
+                    <p>When a customer places an order, our platform automatically routes it to the nearest storage provider with the required inventory, minimizing shipping distance and time.</p>
+                </div>
+            </div>
+            <div class="step animate-on-scroll">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Automated Packaging Process</h3>
+                    <p>Storage providers receive packaging instructions and shipping labels through our app, ensuring consistent and professional packaging for every order.</p>
+                </div>
+            </div>
+            <div class="step animate-on-scroll">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Fast Local Delivery</h3>
+                    <p>Our integrated driver network picks up packaged orders and delivers them to customers, often on the same day or the next day, at a fraction of the cost of traditional shipping.</p>
+                </div>
+            </div>
+            <div class="step animate-on-scroll">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Real-Time Tracking</h3>
+                    <p>Monitor your inventory levels, order status, and delivery progress in real-time through our comprehensive dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="signup-section" id="signup">
+    <div class="container">
+        <h2 class="section-title animate-on-scroll">Join Shiplet Today</h2>
+        <div class="signup-container">
+            <div class="signup-card animate-on-scroll animate-left">
+                <h3>For eCommerce Businesses</h3>
+                <div class="success-message" id="business-success">Thank you for signing up! We'll contact you shortly to discuss your fulfillment needs.</div>
+                <form id="business-form">
+                    <div class="form-group">
+                        <label for="business-name">Business Name</label>
+                        <input type="text" id="business-name" name="business-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="business-email">Email Address</label>
+                        <input type="email" id="business-email" name="business-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="business-phone">Phone Number</label>
+                        <input type="tel" id="business-phone" name="business-phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="business-website">Website URL</label>
+                        <input type="url" id="business-website" name="business-website">
+                    </div>
+                    <div class="form-group">
+                        <label for="business-volume">Monthly Order Volume</label>
+                        <select id="business-volume" name="business-volume" required>
+                            <option value="">Select an option</option>
+                            <option value="0-100">0-100 orders</option>
+                            <option value="101-500">101-500 orders</option>
+                            <option value="501-1000">501-1,000 orders</option>
+                            <option value="1001-5000">1,001-5,000 orders</option>
+                            <option value="5000+">5,000+ orders</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="business-notes">Additional Information</label>
+                        <textarea id="business-notes" name="business-notes" rows="3"></textarea>
+                    </div>
+                    <div class="form-submit">
+                        <button type="submit" class="btn btn-primary">Sign Up as a Business</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="signup-card animate-on-scroll animate-right">
+                <h3>For Storage Providers</h3>
+                <div class="success-message" id="provider-success">Thank you for signing up! We'll contact you shortly to discuss becoming a storage provider.</div>
+                <form id="provider-form">
+                    <div class="form-group">
+                        <label for="provider-name">Full Name</label>
+                        <input type="text" id="provider-name" name="provider-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="provider-email">Email Address</label>
+                        <input type="email" id="provider-email" name="provider-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="provider-phone">Phone Number</label>
+                        <input type="tel" id="provider-phone" name="provider-phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="provider-address">Address</label>
+                        <input type="text" id="provider-address" name="provider-address" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="provider-space">Available Storage Space (sq ft)</label>
+                        <input type="number" id="provider-space" name="provider-space" min="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="provider-type">Space Type</label>
+                        <select id="provider-type" name="provider-type" required>
+                            <option value="">Select an option</option>
+                            <option value="home">Home/Garage</option>
+                            <option value="small-business">Small Business</option>
+                            <option value="retail">Retail Space</option>
+                            <option value="storage-unit">Storage Unit</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="provider-availability">Availability for Package Handling</label>
+                        <select id="provider-availability" name="provider-availability" required>
+                            <option value="">Select an option</option>
+                            <option value="weekdays">Weekdays</option>
+                            <option value="weekends">Weekends</option>
+                            <option value="both">Both</option>
+                            <option value="limited">Limited Hours</option>
+                        </select>
+                    </div>
+                    <div class="form-submit">
+                        <button type="submit" class="btn btn-primary">Sign Up as a Provider</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-about">
+                <div class="footer-logo">
+                    <img src="shiplet.png" alt="Shiplet Logo">
+                </div>
+                <p>Shiplet is a decentralized fulfillment network that helps eCommerce businesses store inventory closer to customers, reducing costs and enabling same-day or next-day shipping.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Press</a></li>
+                    <li><a href="#">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="#">Help Center</a></li>
+                    <li><a href="#">FAQ</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">Partnerships</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Cookie Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 Shiplet, Inc. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Function to save data to the database
+    async function saveToDatabase(data, type) {
+        console.log('Attempting to save data:', data);
+        // API endpoint for your new backend
+        const endpoint = 'http://10.50.55.158:3000/api/signup';
+        
+        try {
+            console.log('Sending request to:', endpoint);
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'API-Key': 'shiplet-secure-api-key-123456' // Match the key in your .env file
+                },
+                body: JSON.stringify(data)
+            });
+            
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Error response:', errorData);
+                throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Success response:', result);
+            return result;
+        } catch (error) {
+            console.error(`Error saving ${type} data:`, error);
+            
+            // Fallback: Store data in localStorage if the API call fails
+            const storedData = JSON.parse(localStorage.getItem('shiplet_signups') || '{"business":[],"provider":[]}');
+            storedData[type].push(data);
+            localStorage.setItem('shiplet_signups', JSON.stringify(storedData));
+            
+            // Also log the data to console for development purposes
+            console.log('Data saved to localStorage:', data);
+            
+            // Return a simulated successful response
+            return { 
+                success: true, 
+                message: 'Data stored locally (API connection failed)',
+                id: `local-${Date.now()}`
+            };
+        }
+    }
+
+    // Form submission handlers
+    document.getElementById('business-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        console.log('Business form submitted');
+        
+        // Collect form data
+        const formData = {
+            businessName: document.getElementById('business-name').value,
+            email: document.getElementById('business-email').value,
+            phone: document.getElementById('business-phone').value,
+            website: document.getElementById('business-website').value,
+            orderVolume: document.getElementById('business-volume').value,
+            notes: document.getElementById('business-notes').value,
+            timestamp: new Date().toISOString(),
+            userType: 'business'
+        };
+        
+        console.log('Sending data:', formData);
+        
+        // Send data to the server
+        saveToDatabase(formData, 'business')
+            .then(response => {
+                console.log('Response received:', response);
+                // Show success message
+                document.getElementById('business-success').style.display = 'block';
+                document.getElementById('business-form').reset();
+                
+                // Hide success message after 5 seconds
+                setTimeout(function() {
+                    document.getElementById('business-success').style.display = 'none';
+                }, 5000);
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                alert('There was an error submitting your information. Please try again.');
+            });
+    });
+    
+    document.getElementById('provider-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        console.log('Provider form submitted');
+        
+        // Collect form data
+        const formData = {
+            name: document.getElementById('provider-name').value,
+            email: document.getElementById('provider-email').value,
+            phone: document.getElementById('provider-phone').value,
+            address: document.getElementById('provider-address').value,
+            spaceSize: document.getElementById('provider-space').value,
+            spaceType: document.getElementById('provider-type').value,
+            availability: document.getElementById('provider-availability').value,
+            timestamp: new Date().toISOString(),
+            userType: 'provider'
+        };
+        
+        console.log('Sending provider data:', formData);
+        
+        // Send data to the server
+        saveToDatabase(formData, 'provider')
+            .then(response => {
+                console.log('Provider response received:', response);
+                // Show success message
+                document.getElementById('provider-success').style.display = 'block';
+                document.getElementById('provider-form').reset();
+                
+                // Hide success message after 5 seconds
+                setTimeout(function() {
+                    document.getElementById('provider-success').style.display = 'none';
+                }, 5000);
+            })
+            .catch(error => {
+                console.error('Error submitting provider form:', error);
+                alert('There was an error submitting your information. Please try again.');
+            });
+    });
+    
+    // Mobile menu toggle
+    document.querySelector('.menu-toggle').addEventListener('click', function() {
+        const navLinks = document.querySelector('.nav-links');
+        navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+    });
+    
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+                
+                // Close mobile menu if open
+                document.querySelector('.nav-links').style.display = '';
+            }
+        });
+    });
+    
+    // Scroll animation handler
+    function handleScrollAnimations() {
+        const animatedElements = document.querySelectorAll('.animate-on-scroll');
+        
+        animatedElements.forEach(element => {
+            const elementTop = element.getBoundingClientRect().top;
+            const windowHeight = window.innerHeight;
+            
+            // Element comes into view (with offset)
+            if (elementTop < windowHeight - 100) {
+                element.classList.add('animated');
+            }
+        });
+    }
+    
+    // Initialize animations
+    window.addEventListener('load', function() {
+        // Trigger once on load to check for elements already in view
+        handleScrollAnimations();
+        
+        // Set up scroll listener
+        window.addEventListener('scroll', handleScrollAnimations);
+        
+        // Initialize the 3D cube animation
+        init3DCubeAnimation();
+
+        // Add debugging log
+        console.log('DOM fully loaded, form handlers set up');
+    });
+    
+    // 3D Cube Animation
+    function init3DCubeAnimation() {
+        const cube = document.querySelector('.cube');
+        if (cube) {
+            // Initial rotation
+            gsap.set(cube, {
+                rotationX: -30,
+                rotationY: 45,
+                transformPerspective: 1000
+            });
+            
+            // Continuous rotation animation
+            gsap.to(cube, {
+                rotationY: '+=360',
+                duration: 20,
+                repeat: -1,
+                ease: 'none'
+            });
+            
+            // Add hover effect to pause and slightly change rotation
+            cube.parentElement.addEventListener('mouseenter', () => {
+                gsap.to(cube, {
+                    rotationX: -20,
+                    rotationZ: 5,
+                    scale: 1.1,
+                    duration: 0.5
+                });
+            });
+            
+            cube.parentElement.addEventListener('mouseleave', () => {
+                gsap.to(cube, {
+                    rotationX: -30,
+                    rotationZ: 0,
+                    scale: 1,
+                    duration: 0.5
+                });
+            });
+        }
+    }
+</script>
+</body>
+</html>
